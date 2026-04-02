@@ -12,6 +12,8 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 
+#define GET_STATUS 0x00
+#define GET_DATA 0x01
 #define STATUS_ADDRESS 0x02
 #define DATA_ADDRESS 0x03
 
@@ -23,7 +25,7 @@ static sensor_data_t sensor_data = {0};
 void COMMS(void *args)
 {
     QueueHandle_t packet_queue = (QueueHandle_t)args;
-    uint8_t next_response_address = STATUS_ADDRESS;
+    uint8_t next_response_address = GET_STATUS;
     packet_t rx_packet = {0};
 
     // loop until spi works is initialized
@@ -35,7 +37,7 @@ void COMMS(void *args)
     
     esp_err_t transfer_status; 
     for(;;){
-        if (next_response_address == DATA_ADDRESS) {
+        if (next_response_address == GET_DATA) {
             get_sensor_data(&sensor_data);
             transfer_status = transfer_packet(
                 sizeof(sensor_data_t),
@@ -59,10 +61,13 @@ void COMMS(void *args)
         ESP_LOGI(TAG, "Transfer status: %s", esp_err_to_name(transfer_status));
         ESP_LOGI(TAG, "Next Address: %X", next_response_address);
         #endif
+
         if (transfer_status == ESP_OK) {
             update_spi_bus_status(STATUS_OK);
-            if (rx_packet.device_address == STATUS_ADDRESS || rx_packet.device_address == DATA_ADDRESS) {
-                next_response_address = rx_packet.device_address;
+            if (rx_packet.device_address == GET_STATUS) {
+                next_response_address = GET_STATUS;
+            } else if (rx_packet.device_address == GET_DATA) {
+                next_response_address = GET_DATA;
             }
         } else if (transfer_status == ESP_ERR_TIMEOUT) {
             update_spi_bus_status(STATUS_ERROR);
