@@ -12,7 +12,7 @@
 #include "esp_log.h"
 #include "freertos/task.h"
 
-#define STATUS_ADDRESS 0x01
+#define STATUS_ADDRESS 0x02
 #define DATA_ADDRESS 0x03
 
 const static char *TAG = "COMMS";
